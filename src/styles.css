@@ -1,0 +1,422 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #0a0f1a;
+  color: #f6f8fb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+button {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  background: #f4be3b;
+  color: #15120a;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+.app {
+  min-height: 100vh;
+  padding: 16px;
+  background:
+    radial-gradient(circle at 18% 14%, rgba(64, 130, 255, 0.2), transparent 28rem),
+    radial-gradient(circle at 82% 18%, rgba(255, 204, 77, 0.12), transparent 24rem),
+    linear-gradient(180deg, #0a0f1a 0%, #10192a 55%, #162219 100%);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: min(100%, 1040px);
+  margin: 0 auto 14px;
+}
+
+.topbar div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.topbar strong {
+  font-size: 18px;
+}
+
+.topbar span,
+.manager p,
+.game-card p {
+  color: #a6b2c4;
+}
+
+.ghost-button {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f6f8fb;
+}
+
+.manager {
+  width: min(100%, 1040px);
+  margin: 0 auto;
+  padding: 28px 0;
+}
+
+.manager-title {
+  margin-bottom: 18px;
+}
+
+.manager h1 {
+  margin: 0 0 8px;
+  font-size: clamp(34px, 7vw, 68px);
+  letter-spacing: 0;
+  line-height: 0.95;
+}
+
+.manager p,
+.game-card p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.game-card {
+  display: grid;
+  grid-template-columns: 88px 1fr auto;
+  align-items: center;
+  gap: 16px;
+  min-height: 154px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(12, 18, 31, 0.82);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.26);
+}
+
+.game-card h2 {
+  margin: 6px 0 6px;
+  font-size: 24px;
+}
+
+.tag {
+  color: #73e2a7;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.game-art {
+  display: grid;
+  place-items: center;
+  width: 88px;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  background: #182335;
+  font-size: 48px;
+}
+
+.game-art.melon {
+  background: #183626;
+}
+
+.playfield {
+  position: relative;
+  width: min(100%, 1040px);
+  height: calc(100vh - 92px);
+  min-height: 520px;
+  margin: 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #08101d;
+}
+
+.game-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hud {
+  position: absolute;
+  z-index: 3;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  pointer-events: none;
+}
+
+.stat {
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(12, 18, 31, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+.stat span {
+  display: block;
+  color: #a6b2c4;
+  font-size: 13px;
+}
+
+.stat strong {
+  display: block;
+  margin-top: 2px;
+  color: #ffcc4d;
+  font-size: 22px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(4, 8, 14, 0.48);
+  backdrop-filter: blur(5px);
+}
+
+.dialog {
+  width: min(100%, 420px);
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(10, 15, 26, 0.92);
+  text-align: center;
+}
+
+.dialog h1 {
+  margin: 0 0 10px;
+  font-size: clamp(32px, 8vw, 56px);
+  letter-spacing: 0;
+}
+
+.dialog p {
+  margin: 0 0 18px;
+  color: #a6b2c4;
+  line-height: 1.6;
+}
+
+.melon-board {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(180deg, #154128, #102818);
+  background-size: 48px 48px, 48px 48px, auto;
+}
+
+.melon {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.melon span {
+  font-size: 30px;
+}
+
+.melon.bad {
+  filter: saturate(0.82) brightness(0.94);
+}
+
+.melon.bad::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  bottom: 9px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(55, 80, 45, 0.68);
+}
+
+.pigeon {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
+  transition: left 90ms linear, top 90ms linear;
+}
+
+.pigeon::after {
+  content: "";
+  position: absolute;
+  right: 2px;
+  top: 23px;
+  width: 10px;
+  height: 6px;
+  border-radius: 999px;
+  background: #f4be3b;
+  opacity: 0;
+  transform-origin: left center;
+}
+
+.pigeon.pecking {
+  animation: pigeon-peck 180ms ease-out;
+}
+
+.pigeon.pecking::after {
+  opacity: 1;
+  transform: translateX(10px) scaleX(1.8);
+}
+
+.pigeon span {
+  font-size: 38px;
+}
+
+@keyframes pigeon-peck {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+
+  45% {
+    transform: rotate(9deg) scale(1.06);
+  }
+
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+.dpad {
+  position: absolute;
+  z-index: 4;
+  right: 14px;
+  bottom: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, 54px);
+  gap: 8px;
+}
+
+.dpad button {
+  min-width: 0;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.12);
+  color: #f6f8fb;
+  backdrop-filter: blur(8px);
+}
+
+.dpad button:first-child {
+  grid-column: 2;
+}
+
+.dpad button:last-child {
+  grid-column: 2;
+}
+
+.peck-button {
+  position: absolute;
+  z-index: 4;
+  left: 14px;
+  bottom: 14px;
+  min-width: 84px;
+  background: #f4be3b;
+  color: #15120a;
+}
+
+.air-controls {
+  position: absolute;
+  z-index: 4;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  display: grid;
+  grid-template-columns: 64px 64px 1fr 92px;
+  gap: 10px;
+}
+
+.air-controls button {
+  min-width: 0;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.12);
+  color: #f6f8fb;
+  backdrop-filter: blur(8px);
+}
+
+.air-controls .fire-button {
+  grid-column: 4;
+  background: #f4be3b;
+  color: #15120a;
+}
+
+@media (max-width: 760px) {
+  .app {
+    padding: 10px;
+  }
+
+  .topbar {
+    margin-bottom: 10px;
+  }
+
+  .game-grid,
+  .game-card {
+    grid-template-columns: 1fr;
+  }
+
+  .game-card {
+    align-items: stretch;
+  }
+
+  .game-art {
+    width: 72px;
+  }
+
+  .playfield {
+    height: calc(100dvh - 78px);
+    min-height: 0;
+  }
+
+  .hud {
+    gap: 6px;
+  }
+
+  .stat {
+    padding: 7px 8px;
+  }
+
+  .stat strong {
+    font-size: 17px;
+  }
+}
