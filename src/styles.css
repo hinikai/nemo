@@ -333,9 +333,9 @@ button:active {
   place-items: center;
   padding: 92px 20px 96px;
   background:
-    linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
-    linear-gradient(135deg, #243524 0%, #182721 48%, #2d2620 100%);
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(135deg, #1b2b1f 0%, #14201c 48%, #241e1a 100%);
   background-size: 54px 54px, 54px 54px, auto;
 }
 
@@ -357,29 +357,40 @@ button:active {
   min-height: 0;
   padding: 0;
   overflow: hidden;
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.1);
   border-radius: 6px;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 42%),
-    #42503c;
+    linear-gradient(135deg, rgba(255, 255, 255, 0.055), transparent 42%),
+    #2f3b32;
   color: #f6f8fb;
-  box-shadow: inset 0 -5px 0 rgba(0, 0, 0, 0.16);
+  box-shadow: inset 0 -5px 0 rgba(0, 0, 0, 0.22);
 }
 
 .mine-cell.near {
   border-color: rgba(115, 226, 167, 0.58);
 }
 
+.mine-cell.has-mine:not(.current) {
+  border-color: rgba(244, 190, 59, 0.62);
+  background:
+    radial-gradient(circle at 50% 48%, rgba(244, 190, 59, 0.18), transparent 46%),
+    linear-gradient(135deg, rgba(255, 95, 86, 0.18), transparent 45%),
+    #4b2b24;
+  box-shadow:
+    0 0 0 1px rgba(244, 190, 59, 0.12),
+    inset 0 -5px 0 rgba(0, 0, 0, 0.3);
+}
+
 .mine-cell.start {
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.11), transparent 44%),
-    #2b6b56;
+    linear-gradient(135deg, rgba(255, 255, 255, 0.09), transparent 44%),
+    #235745;
 }
 
 .mine-cell.goal {
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent 42%),
-    #a66a2a;
+    linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent 42%),
+    #87521f;
 }
 
 .mine-cell.current {
@@ -391,9 +402,14 @@ button:active {
 }
 
 .mine-cell.show-mine:not(.current) {
+  border-color: rgba(255, 95, 86, 0.72);
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent 40%),
-    #3b3430;
+    radial-gradient(circle at 50% 45%, rgba(255, 95, 86, 0.34), transparent 54%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 40%),
+    #5a2924;
+  box-shadow:
+    0 0 0 1px rgba(255, 95, 86, 0.32),
+    inset 0 -5px 0 rgba(0, 0, 0, 0.28);
 }
 
 .mine-cell.exploding {
@@ -438,13 +454,16 @@ button:active {
 .mine-mark {
   position: absolute;
   z-index: 1;
-  width: 38%;
+  width: 48%;
   aspect-ratio: 1;
   border-radius: 50%;
-  background: #171a1d;
+  background:
+    radial-gradient(circle at 36% 30%, #5c6570 0 12%, transparent 13%),
+    #111418;
   box-shadow:
-    inset -3px -4px 0 rgba(0, 0, 0, 0.34),
-    0 5px 10px rgba(0, 0, 0, 0.28);
+    inset -4px -5px 0 rgba(0, 0, 0, 0.44),
+    0 7px 12px rgba(0, 0, 0, 0.34),
+    0 0 14px rgba(255, 95, 86, 0.28);
 }
 
 .mine-mark::before {
@@ -462,13 +481,15 @@ button:active {
 .mine-mark::after {
   content: "";
   position: absolute;
-  top: -35%;
-  right: -12%;
-  width: 22%;
+  top: -38%;
+  right: -15%;
+  width: 27%;
   aspect-ratio: 1;
   border-radius: 50%;
   background: #f4be3b;
-  box-shadow: 0 0 9px rgba(244, 190, 59, 0.9);
+  box-shadow:
+    0 0 9px rgba(244, 190, 59, 0.95),
+    0 0 17px rgba(255, 95, 86, 0.7);
 }
 
 .mine-blast {

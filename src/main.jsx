@@ -655,10 +655,11 @@ function MineMingGame() {
             const isGoal = cell.row === MINE_GOAL.row && cell.col === MINE_GOAL.col;
             const isPlayer = cell.row === player.row && cell.col === player.col;
             const isRevealed = revealedMines.has(key);
-            const shouldShowMine = isRevealed || ((phase === "win" || phase === "lose") && mines.has(key));
+            const isMine = mines.has(key);
+            const shouldShowMine = isRevealed || ((phase === "win" || phase === "lose") && isMine);
             const hasBlast = blasts.some((blast) => blast.row === cell.row && blast.col === cell.col);
             const isNearPlayer = Math.abs(cell.row - player.row) + Math.abs(cell.col - player.col) === 1;
-            const cellLabel = isPlayer ? "小明当前位置" : isGoal ? "终点" : isStart ? "起点" : shouldShowMine ? "地雷" : "地面";
+            const cellLabel = isPlayer ? "小明当前位置" : isGoal ? "终点" : isStart ? "起点" : isMine ? "地雷格子" : "地面";
 
             return (
               <button
@@ -667,6 +668,7 @@ function MineMingGame() {
                   "mine-cell",
                   isStart ? "start" : "",
                   isGoal ? "goal" : "",
+                  isMine ? "has-mine" : "",
                   isPlayer ? "current" : "",
                   isNearPlayer ? "near" : "",
                   isRevealed ? "revealed" : "",
