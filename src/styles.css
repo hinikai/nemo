@@ -34,6 +34,8 @@ button:active {
 }
 
 .app {
+  height: 100vh;
+  overflow: auto;
   min-height: 100vh;
   padding: 16px;
   background:
@@ -134,8 +136,12 @@ button:active {
   font-size: 48px;
 }
 
-.game-art.melon {
+.game-art-melon {
   background: #183626;
+}
+
+.game-art-mine {
+  background: #342522;
 }
 
 .playfield {
@@ -320,6 +326,252 @@ button:active {
   }
 }
 
+.mine-board {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 92px 20px 96px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(135deg, #243524 0%, #182721 48%, #2d2620 100%);
+  background-size: 54px 54px, 54px 54px, auto;
+}
+
+.mine-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: repeat(9, minmax(0, 1fr));
+  gap: 5px;
+  width: min(100%, 840px);
+  max-height: 100%;
+  aspect-ratio: 12 / 9;
+}
+
+.mine-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border-color: rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 42%),
+    #42503c;
+  color: #f6f8fb;
+  box-shadow: inset 0 -5px 0 rgba(0, 0, 0, 0.16);
+}
+
+.mine-cell.near {
+  border-color: rgba(115, 226, 167, 0.58);
+}
+
+.mine-cell.start {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.11), transparent 44%),
+    #2b6b56;
+}
+
+.mine-cell.goal {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent 42%),
+    #a66a2a;
+}
+
+.mine-cell.current {
+  z-index: 2;
+  border-color: rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 0 0 2px rgba(244, 190, 59, 0.35),
+    inset 0 -5px 0 rgba(0, 0, 0, 0.15);
+}
+
+.mine-cell.show-mine:not(.current) {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent 40%),
+    #3b3430;
+}
+
+.mine-cell.exploding {
+  animation: mine-cell-shake 260ms ease-out;
+}
+
+.mine-label {
+  position: relative;
+  z-index: 1;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.ming-token {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: min(76%, 38px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #f6c56f;
+  color: #2c1c07;
+  font-size: 16px;
+  font-weight: 900;
+  box-shadow:
+    0 8px 16px rgba(0, 0, 0, 0.28),
+    inset 0 -4px 0 rgba(156, 87, 34, 0.36);
+}
+
+.ming-token::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 8px;
+  right: 8px;
+  height: 5px;
+  border-radius: 999px 999px 4px 4px;
+  background: #2b2118;
+}
+
+.mine-mark {
+  position: absolute;
+  z-index: 1;
+  width: 38%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #171a1d;
+  box-shadow:
+    inset -3px -4px 0 rgba(0, 0, 0, 0.34),
+    0 5px 10px rgba(0, 0, 0, 0.28);
+}
+
+.mine-mark::before {
+  content: "";
+  position: absolute;
+  top: -28%;
+  left: 48%;
+  width: 42%;
+  height: 34%;
+  border-top: 3px solid #1e2227;
+  border-right: 3px solid #1e2227;
+  border-radius: 0 999px 0 0;
+}
+
+.mine-mark::after {
+  content: "";
+  position: absolute;
+  top: -35%;
+  right: -12%;
+  width: 22%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #f4be3b;
+  box-shadow: 0 0 9px rgba(244, 190, 59, 0.9);
+}
+
+.mine-blast {
+  position: absolute;
+  z-index: 4;
+  inset: -36%;
+  pointer-events: none;
+  animation: mine-blast-fade 620ms ease-out forwards;
+}
+
+.mine-blast::before {
+  content: "";
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff4ad 0 12%, #f4be3b 13% 30%, #f97316 31% 48%, rgba(239, 68, 68, 0.82) 49% 63%, transparent 64%);
+  animation: mine-blast-pop 620ms ease-out forwards;
+}
+
+.mine-blast::after {
+  content: "";
+  position: absolute;
+  inset: 5%;
+  background: repeating-conic-gradient(from 8deg, rgba(255, 244, 173, 0.95) 0 9deg, transparent 9deg 24deg, rgba(249, 115, 22, 0.82) 24deg 31deg, transparent 31deg 48deg);
+  clip-path: polygon(50% 0, 58% 34%, 92% 18%, 66% 48%, 100% 58%, 62% 62%, 80% 100%, 50% 70%, 20% 100%, 38% 62%, 0 58%, 34% 48%, 8% 18%, 42% 34%);
+  animation: mine-blast-rays 620ms ease-out forwards;
+}
+
+.mine-blast i {
+  position: absolute;
+  inset: 24%;
+  border: 2px solid rgba(255, 244, 173, 0.9);
+  border-radius: 50%;
+  animation: mine-blast-ring 620ms ease-out forwards;
+}
+
+@keyframes mine-cell-shake {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  30% {
+    transform: translate(2px, -2px);
+  }
+
+  60% {
+    transform: translate(-2px, 2px);
+  }
+}
+
+@keyframes mine-blast-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.15);
+  }
+
+  34% {
+    opacity: 1;
+    transform: scale(0.9);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.18);
+  }
+}
+
+@keyframes mine-blast-rays {
+  0% {
+    opacity: 0;
+    transform: rotate(-12deg) scale(0.3);
+  }
+
+  28% {
+    opacity: 1;
+    transform: rotate(10deg) scale(0.95);
+  }
+
+  100% {
+    opacity: 0;
+    transform: rotate(24deg) scale(1.25);
+  }
+}
+
+@keyframes mine-blast-ring {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.2);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.75);
+  }
+}
+
+@keyframes mine-blast-fade {
+  100% {
+    opacity: 0;
+  }
+}
+
 .dpad {
   position: absolute;
   z-index: 4;
@@ -383,6 +635,7 @@ button:active {
 
 @media (max-width: 760px) {
   .app {
+    height: 100dvh;
     padding: 10px;
   }
 
@@ -418,5 +671,25 @@ button:active {
 
   .stat strong {
     font-size: 17px;
+  }
+
+  .mine-board {
+    padding: 80px 10px 90px;
+  }
+
+  .mine-grid {
+    gap: 3px;
+  }
+
+  .mine-cell {
+    border-radius: 4px;
+  }
+
+  .ming-token {
+    font-size: 13px;
+  }
+
+  .mine-label {
+    font-size: 13px;
   }
 }

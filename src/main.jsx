@@ -14,8 +14,25 @@ const games = [
     name: "鸽子吃西瓜",
     description: "吃好西瓜加分，碰到坏西瓜扣分，超过 100 分获胜。",
     tag: "反应收集"
+  },
+  {
+    id: "mine",
+    name: "小明踩地雷",
+    description: "控制小明从起点走到终点，10 分开始，踩雷扣 1 分。",
+    tag: "路线冒险"
   }
 ];
+
+const gameIcons = {
+  air: "✈",
+  melon: "🍉",
+  mine: "💣"
+};
+
+const MINE_ROWS = 9;
+const MINE_COLS = 12;
+const MINE_START = { row: 8, col: 0 };
+const MINE_GOAL = { row: 0, col: 11 };
 
 function App() {
   const [activeGame, setActiveGame] = useState("manager");
@@ -28,7 +45,7 @@ function App() {
           游戏管理
         </button>
         <div>
-          <strong>{currentGame?.name ?? "小游戏管理器"}</strong>
+          <strong>{currentGame?.name ?? "NEMO小游戏世界"}</strong>
           <span>{currentGame?.tag ?? "选择一个游戏开始"}</span>
         </div>
       </header>
@@ -36,6 +53,7 @@ function App() {
       {activeGame === "manager" && <GameManager onSelect={setActiveGame} />}
       {activeGame === "air" && <AirDefenseGame />}
       {activeGame === "melon" && <MelonPigeonGame />}
+      {activeGame === "mine" && <MineMingGame />}
     </main>
   );
 }
@@ -44,14 +62,14 @@ function GameManager({ onSelect }) {
   return (
     <section className="manager">
       <div className="manager-title">
-        <h1>小游戏管理器</h1>
+        <h1>NEMO小游戏世界</h1>
         <p>选一个游戏开始玩，后面新增游戏也可以继续放在这里。</p>
       </div>
       <div className="game-grid">
         {games.map((game) => (
           <article className="game-card" key={game.id}>
-            <div className={`game-art ${game.id}`} aria-hidden="true">
-              {game.id === "air" ? "✈" : "🍉"}
+            <div className={`game-art game-art-${game.id}`} aria-hidden="true">
+              {gameIcons[game.id]}
             </div>
             <div>
               <span className="tag">{game.tag}</span>
@@ -475,6 +493,225 @@ function MelonPigeonGame() {
   );
 }
 
+function MineMingGame() {
+  const [player, setPlayer] = useState(MINE_START);
+  const [score, setScore] = useState(10);
+  const [phase, setPhase] = useState("ready");
+  const [mines, setMines] = useState(() => createMineLayout());
+  const [revealedMines, setRevealedMines] = useState(() => new Set());
+  const [blasts, setBlasts] = useState([]);
+  const audioRef = useRef(null);
+  const blastTimersRef = useRef([]);
+
+  const cells = useMemo(
+    () =>
+      Array.from({ length: MINE_ROWS * MINE_COLS }, (_, index) => ({
+        row: Math.floor(index / MINE_COLS),
+        col: index % MINE_COLS
+      })),
+    []
+  );
+
+  const message = useMemo(() => {
+    if (phase === "win") return "抵达终点";
+    if (phase === "lose") return "分数归零";
+    if (phase === "ready") return "准备出发";
+    return score <= 3 ? "谨慎前进" : "前往终点";
+  }, [phase, score]);
+
+  useEffect(() => {
+    function onKeyDown(event) {
+      const movement = {
+        ArrowUp: [-1, 0],
+        ArrowDown: [1, 0],
+        ArrowLeft: [0, -1],
+        ArrowRight: [0, 1],
+        w: [-1, 0],
+        W: [-1, 0],
+        s: [1, 0],
+        S: [1, 0],
+        a: [0, -1],
+        A: [0, -1],
+        d: [0, 1],
+        D: [0, 1]
+      };
+
+      if (event.key === "Enter" && phase !== "playing") {
+        event.preventDefault();
+        reset();
+        return;
+      }
+
+      const direction = movement[event.key];
+      if (!direction) return;
+      event.preventDefault();
+      moveBy(direction[0], direction[1]);
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [phase, player, score, mines, revealedMines]);
+
+  useEffect(() => {
+    return () => {
+      blastTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+      audioRef.current?.close?.();
+    };
+  }, []);
+
+  function reset() {
+    blastTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    blastTimersRef.current = [];
+    setPlayer(MINE_START);
+    setScore(10);
+    setPhase("playing");
+    setMines(createMineLayout());
+    setRevealedMines(new Set());
+    setBlasts([]);
+  }
+
+  function moveBy(rowDelta, colDelta) {
+    if (phase !== "playing") return;
+
+    const next = {
+      row: clamp(player.row + rowDelta, 0, MINE_ROWS - 1),
+      col: clamp(player.col + colDelta, 0, MINE_COLS - 1)
+    };
+    if (next.row === player.row && next.col === player.col) return;
+
+    setPlayer(next);
+
+    const key = mineKey(next);
+    const isNewMine = mines.has(key) && !revealedMines.has(key);
+    if (isNewMine) {
+      const nextScore = Math.max(0, score - 1);
+      setScore(nextScore);
+      setRevealedMines((current) => {
+        const nextRevealed = new Set(current);
+        nextRevealed.add(key);
+        return nextRevealed;
+      });
+      triggerBlast(next);
+      playMineSound();
+      if (nextScore <= 0) {
+        setPhase("lose");
+        return;
+      }
+    }
+
+    if (next.row === MINE_GOAL.row && next.col === MINE_GOAL.col) {
+      setPhase("win");
+    }
+  }
+
+  function moveToCell(cell) {
+    if (phase !== "playing") return;
+    const rowDelta = cell.row - player.row;
+    const colDelta = cell.col - player.col;
+    if (Math.abs(rowDelta) + Math.abs(colDelta) !== 1) return;
+    moveBy(rowDelta, colDelta);
+  }
+
+  function triggerBlast(cell) {
+    const id = `${mineKey(cell)}-${Date.now()}-${Math.random()}`;
+    setBlasts((current) => [...current, { id, ...cell }]);
+    const timer = window.setTimeout(() => {
+      setBlasts((current) => current.filter((blast) => blast.id !== id));
+    }, 620);
+    blastTimersRef.current.push(timer);
+  }
+
+  function playMineSound() {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+
+    const context = audioRef.current ?? new AudioContext();
+    audioRef.current = context;
+    if (context.state === "suspended") context.resume();
+
+    const now = context.currentTime;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = "sawtooth";
+    oscillator.frequency.setValueAtTime(118, now);
+    oscillator.frequency.exponentialRampToValueAtTime(42, now + 0.22);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.035, now + 0.018);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.26);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start(now);
+    oscillator.stop(now + 0.28);
+  }
+
+  return (
+    <section className="playfield mine-field">
+      <GameHud items={[["分数", score], ["地雷", `${revealedMines.size}/${mines.size}`], ["状态", message]]} />
+      <div className="mine-board">
+        <div className="mine-grid" role="grid" aria-label="小明踩地雷地图">
+          {cells.map((cell) => {
+            const key = mineKey(cell);
+            const isStart = cell.row === MINE_START.row && cell.col === MINE_START.col;
+            const isGoal = cell.row === MINE_GOAL.row && cell.col === MINE_GOAL.col;
+            const isPlayer = cell.row === player.row && cell.col === player.col;
+            const isRevealed = revealedMines.has(key);
+            const shouldShowMine = isRevealed || ((phase === "win" || phase === "lose") && mines.has(key));
+            const hasBlast = blasts.some((blast) => blast.row === cell.row && blast.col === cell.col);
+            const isNearPlayer = Math.abs(cell.row - player.row) + Math.abs(cell.col - player.col) === 1;
+            const cellLabel = isPlayer ? "小明当前位置" : isGoal ? "终点" : isStart ? "起点" : shouldShowMine ? "地雷" : "地面";
+
+            return (
+              <button
+                type="button"
+                className={[
+                  "mine-cell",
+                  isStart ? "start" : "",
+                  isGoal ? "goal" : "",
+                  isPlayer ? "current" : "",
+                  isNearPlayer ? "near" : "",
+                  isRevealed ? "revealed" : "",
+                  shouldShowMine ? "show-mine" : "",
+                  hasBlast ? "exploding" : ""
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                key={key}
+                onClick={() => moveToCell(cell)}
+                aria-label={cellLabel}
+              >
+                {isStart && !isPlayer && <span className="mine-label">起</span>}
+                {isGoal && !isPlayer && <span className="mine-label">终</span>}
+                {shouldShowMine && <span className="mine-mark" aria-hidden="true" />}
+                {hasBlast && (
+                  <span className="mine-blast" aria-hidden="true">
+                    <i />
+                  </span>
+                )}
+                {isPlayer && <span className="ming-token" aria-hidden="true">明</span>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      {phase !== "playing" && (
+        <div className="overlay">
+          <div className="dialog">
+            <h1>{phase === "win" ? "胜利" : phase === "lose" ? "失败" : "小明踩地雷"}</h1>
+            <p>{phase === "win" ? `到达终点，最终分数 ${score}` : phase === "lose" ? "分数归零，游戏结束。" : "10 分起步，抵达终点。"}</p>
+            <button onClick={reset}>{phase === "ready" ? "开始游戏" : "再玩一次"}</button>
+          </div>
+        </div>
+      )}
+      <div className="dpad mine-dpad">
+        <button onClick={() => moveBy(-1, 0)}>上</button>
+        <button onClick={() => moveBy(0, -1)}>左</button>
+        <button onClick={() => moveBy(0, 1)}>右</button>
+        <button onClick={() => moveBy(1, 0)}>下</button>
+      </div>
+    </section>
+  );
+}
+
 function GameHud({ items }) {
   return (
     <div className="hud">
@@ -495,6 +732,23 @@ function createMelons() {
     y: 13 + Math.random() * 74,
     good: Math.random() > 0.42
   })).sort(() => Math.random() - 0.5);
+}
+
+function createMineLayout() {
+  const candidates = [];
+  for (let row = 0; row < MINE_ROWS; row += 1) {
+    for (let col = 0; col < MINE_COLS; col += 1) {
+      const nearStart = Math.abs(row - MINE_START.row) + Math.abs(col - MINE_START.col) <= 1;
+      const nearGoal = Math.abs(row - MINE_GOAL.row) + Math.abs(col - MINE_GOAL.col) <= 1;
+      if (!nearStart && !nearGoal) candidates.push(mineKey({ row, col }));
+    }
+  }
+
+  return new Set(candidates.sort(() => Math.random() - 0.5).slice(0, 20));
+}
+
+function mineKey(cell) {
+  return `${cell.row}:${cell.col}`;
 }
 
 function distance(a, b) {
