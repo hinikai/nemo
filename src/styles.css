@@ -144,6 +144,10 @@ button:active {
   background: #342522;
 }
 
+.game-art-baseball {
+  background: #243638;
+}
+
 .playfield {
   position: relative;
   width: min(100%, 1040px);
@@ -590,6 +594,329 @@ button:active {
 @keyframes mine-blast-fade {
   100% {
     opacity: 0;
+  }
+}
+
+.baseball-board {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(180deg, #1d4938 0%, #25583d 48%, #7d5635 49%, #513724 100%);
+  background-size: 54px 54px, 54px 54px, auto;
+}
+
+.baseball-grass {
+  position: absolute;
+  inset: 78px 24px 98px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 18px, transparent 18px 38px),
+    linear-gradient(180deg, rgba(115, 226, 167, 0.1), rgba(14, 40, 27, 0.12));
+}
+
+.baseball-diamond {
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  width: min(34vw, 250px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -35%) rotate(45deg);
+  border: 2px solid rgba(255, 255, 255, 0.38);
+  background: rgba(185, 124, 70, 0.38);
+}
+
+.baseball-diamond::before,
+.baseball-diamond::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  aspect-ratio: 1;
+  background: #f7ead8;
+  transform: rotate(45deg);
+}
+
+.baseball-diamond::before {
+  left: calc(50% - 6px);
+  top: -7px;
+}
+
+.baseball-diamond::after {
+  right: -7px;
+  top: calc(50% - 6px);
+}
+
+.baseball-hit-zone {
+  position: absolute;
+  z-index: 2;
+  left: 48%;
+  top: 66%;
+  display: grid;
+  place-items: center;
+  width: 116px;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border: 2px dashed rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.46);
+  font-size: 14px;
+  font-weight: 900;
+  pointer-events: none;
+  transition:
+    border-color 140ms ease-out,
+    background 140ms ease-out,
+    color 140ms ease-out,
+    box-shadow 140ms ease-out;
+}
+
+.baseball-board.hit-ready .baseball-hit-zone {
+  border-color: rgba(244, 190, 59, 0.96);
+  background: rgba(244, 190, 59, 0.18);
+  color: #ffcc4d;
+  box-shadow:
+    0 0 0 5px rgba(244, 190, 59, 0.12),
+    0 0 28px rgba(244, 190, 59, 0.34);
+}
+
+.baseball-board.hit-ready .baseball-feedback {
+  border-color: rgba(244, 190, 59, 0.72);
+  background: rgba(53, 41, 23, 0.86);
+}
+
+.baseball-target {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 88px;
+  min-height: 70px;
+  border: 2px solid rgba(244, 190, 59, 0.82);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle, rgba(244, 190, 59, 0.28) 0 30%, transparent 31%),
+    rgba(53, 41, 23, 0.84);
+  color: #f6f8fb;
+  box-shadow: 0 0 26px rgba(244, 190, 59, 0.22);
+}
+
+.baseball-target span {
+  color: #ffcc4d;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.baseball-target strong {
+  font-size: 30px;
+  line-height: 1;
+}
+
+.baseball-target.hit {
+  animation: baseball-target-hit 520ms ease-out;
+}
+
+.target-up {
+  top: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.target-down {
+  left: 50%;
+  bottom: 84px;
+  transform: translateX(-50%);
+}
+
+.target-left {
+  left: 26px;
+  top: 52%;
+  transform: translateY(-50%);
+}
+
+.target-right {
+  right: 26px;
+  top: 52%;
+  transform: translateY(-50%);
+}
+
+.pitcher {
+  position: absolute;
+  z-index: 2;
+  left: 18%;
+  top: 43%;
+  display: grid;
+  place-items: center;
+  width: 68px;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.24);
+}
+
+.pitcher span {
+  font-size: 42px;
+}
+
+.animal-batter {
+  position: absolute;
+  z-index: 3;
+  left: 48%;
+  top: 66%;
+  width: 86px;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  transition: transform 130ms ease-out;
+}
+
+.animal-batter.hit {
+  transform: rotate(-4deg) scale(1.06);
+}
+
+.animal-batter.miss {
+  transform: rotate(4deg) scale(0.97);
+}
+
+.animal-face {
+  position: absolute;
+  z-index: 2;
+  inset: 17px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 46px;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.28);
+}
+
+.baseball-bat {
+  position: absolute;
+  z-index: 1;
+  left: 58px;
+  top: -16px;
+  width: 13px;
+  height: 92px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #845326, #f0bf70 42%, #7a471f);
+  transform-origin: 50% 82%;
+  transition: transform 150ms ease-out;
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.24);
+}
+
+.swing-up .baseball-bat {
+  transform: rotate(-10deg);
+}
+
+.swing-down .baseball-bat {
+  transform: rotate(172deg);
+}
+
+.swing-left .baseball-bat {
+  transform: rotate(-84deg);
+}
+
+.swing-right .baseball-bat {
+  transform: rotate(82deg);
+}
+
+.baseball-ball {
+  position: absolute;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: #f8fafc;
+  color: #c22e2e;
+  font-size: 20px;
+  line-height: 1;
+  box-shadow:
+    0 10px 18px rgba(0, 0, 0, 0.28),
+    inset -3px -4px 0 rgba(0, 0, 0, 0.14);
+  transition:
+    left 440ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    top 440ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 180ms ease-out,
+    opacity 180ms ease-out;
+}
+
+.ball-idle {
+  opacity: 0.72;
+}
+
+.ball-pitching {
+  transition: none;
+}
+
+.ball-hit {
+  transform: scale(1.16);
+}
+
+.ball-miss {
+  opacity: 0.74;
+  transform: scale(0.86);
+}
+
+.baseball-feedback {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: calc(100% - 238px);
+  min-height: 42px;
+  padding: 8px 14px;
+  translate: -50% 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(12, 18, 31, 0.78);
+  backdrop-filter: blur(8px);
+}
+
+.baseball-feedback span,
+.baseball-feedback strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.baseball-feedback span {
+  color: #f6f8fb;
+  font-weight: 800;
+}
+
+.baseball-feedback strong {
+  color: #ffcc4d;
+  font-size: 14px;
+}
+
+.swing-button {
+  position: absolute;
+  z-index: 4;
+  left: 14px;
+  bottom: 14px;
+  min-width: 92px;
+  background: #f4be3b;
+  color: #15120a;
+}
+
+@keyframes baseball-target-hit {
+  0%,
+  100% {
+    filter: brightness(1);
+    box-shadow: 0 0 26px rgba(244, 190, 59, 0.22);
+  }
+
+  45% {
+    filter: brightness(1.25);
+    box-shadow: 0 0 34px rgba(244, 190, 59, 0.56);
   }
 }
 

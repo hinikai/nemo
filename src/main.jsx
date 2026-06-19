@@ -20,19 +20,37 @@ const games = [
     name: "小明踩地雷",
     description: "控制小明从起点走到终点，10 分开始，踩雷扣 1 分。",
     tag: "路线冒险"
+  },
+  {
+    id: "baseball",
+    name: "动物打棒球",
+    description: "调整球棒方向，把棒球精准打到目标位置。",
+    tag: "方向击球"
   }
 ];
 
 const gameIcons = {
   air: "✈",
   melon: "🍉",
-  mine: "💣"
+  mine: "💣",
+  baseball: "⚾"
 };
 
 const MINE_ROWS = 9;
 const MINE_COLS = 12;
 const MINE_START = { row: 8, col: 0 };
 const MINE_GOAL = { row: 0, col: 11 };
+const BASEBALL_PITCHES = 5;
+const BASEBALL_WIN_SCORE = 3;
+const BASEBALL_HIT_MIN = 0.46;
+const BASEBALL_HIT_MAX = 0.99;
+const BASEBALL_DIRECTIONS = [
+  { id: "up", label: "上方", button: "上", symbol: "↑", x: 50, y: 15 },
+  { id: "left", label: "左方", button: "左", symbol: "←", x: 16, y: 52 },
+  { id: "right", label: "右方", button: "右", symbol: "→", x: 84, y: 52 },
+  { id: "down", label: "下方", button: "下", symbol: "↓", x: 50, y: 88 }
+];
+const BASEBALL_DROP_POSITION = { x: 51, y: 75 };
 
 function App() {
   const [activeGame, setActiveGame] = useState("manager");
@@ -54,6 +72,7 @@ function App() {
       {activeGame === "air" && <AirDefenseGame />}
       {activeGame === "melon" && <MelonPigeonGame />}
       {activeGame === "mine" && <MineMingGame />}
+      {activeGame === "baseball" && <AnimalBaseballGame />}
     </main>
   );
 }
@@ -714,6 +733,233 @@ function MineMingGame() {
   );
 }
 
+function AnimalBaseballGame() {
+  const [phase, setPhase] = useState("ready");
+  const [score, setScore] = useState(0);
+  const [attempt, setAttempt] = useState(0);
+  const [batDirection, setBatDirection] = useState("right");
+  const [target, setTarget] = useState(() => pickBaseballTarget());
+  const [ball, setBall] = useState({ status: "idle", progress: 0, result: "ready", flight: null });
+  const [feedback, setFeedback] = useState("准备击球");
+  const rafRef = useRef(0);
+  const nextPitchTimerRef = useRef(0);
+  const pitchIdRef = useRef(0);
+  const gameRef = useRef({ phase, score, attempt, batDirection, target, ball });
+
+  const targetDirection = getBaseballDirection(target.id);
+  const batInfo = getBaseballDirection(batDirection);
+  const ballStyle = getBaseballBallStyle(ball, batDirection, target);
+  const canHitNow = phase === "playing" && ball.status === "pitching" && ball.progress >= BASEBALL_HIT_MIN && ball.progress <= BASEBALL_HIT_MAX;
+  const feedbackText = canHitNow ? "现在挥棒" : feedback;
+  const chanceLabel = phase === "playing" ? `${Math.min(attempt + 1, BASEBALL_PITCHES)}/${BASEBALL_PITCHES}` : `${attempt}/${BASEBALL_PITCHES}`;
+  const resultText = score >= BASEBALL_WIN_SCORE ? "胜利" : "失败";
+
+  useEffect(() => {
+    gameRef.current = { phase, score, attempt, batDirection, target, ball };
+  }, [phase, score, attempt, batDirection, target, ball]);
+
+  useEffect(() => {
+    function onKeyDown(event) {
+      const directionKeys = {
+        ArrowUp: "up",
+        ArrowDown: "down",
+        ArrowLeft: "left",
+        ArrowRight: "right",
+        w: "up",
+        W: "up",
+        s: "down",
+        S: "down",
+        a: "left",
+        A: "left",
+        d: "right",
+        D: "right"
+      };
+
+      if (event.key === "Enter" && gameRef.current.phase !== "playing") {
+        event.preventDefault();
+        reset();
+        return;
+      }
+
+      if (event.key === " ") {
+        event.preventDefault();
+        swing();
+        return;
+      }
+
+      const nextDirection = directionKeys[event.key];
+      if (nextDirection) {
+        event.preventDefault();
+        chooseDirection(nextDirection);
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      window.clearTimeout(nextPitchTimerRef.current);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
+  function reset() {
+    cancelAnimationFrame(rafRef.current);
+    window.clearTimeout(nextPitchTimerRef.current);
+    pitchIdRef.current += 1;
+    const startBall = { status: "idle", progress: 0, result: "ready", flight: null };
+    const startTarget = pickBaseballTarget();
+    gameRef.current = {
+      phase: "playing",
+      score: 0,
+      attempt: 0,
+      batDirection: "right",
+      target: startTarget,
+      ball: startBall
+    };
+    setPhase("playing");
+    setScore(0);
+    setAttempt(0);
+    setBatDirection("right");
+    setTarget(startTarget);
+    setBall(startBall);
+    setFeedback("先调方向，等提示亮起再挥棒");
+    startPitch(startTarget);
+  }
+
+  function chooseDirection(direction) {
+    gameRef.current = { ...gameRef.current, batDirection: direction };
+    setBatDirection(direction);
+  }
+
+  function startPitch(targetOverride) {
+    cancelAnimationFrame(rafRef.current);
+    window.clearTimeout(nextPitchTimerRef.current);
+    const pitchId = pitchIdRef.current + 1;
+    const nextTarget = targetOverride ?? pickBaseballTarget();
+    const nextBall = { status: "pitching", progress: 0, result: null, flight: null };
+    pitchIdRef.current = pitchId;
+    gameRef.current = { ...gameRef.current, phase: "playing", target: nextTarget, ball: nextBall };
+    setPhase("playing");
+    setTarget(nextTarget);
+    setBall(nextBall);
+    setFeedback(`目标：${nextTarget.label}，等球靠近再挥棒`);
+
+    const startedAt = performance.now();
+    const duration = 2600;
+    function tick(now) {
+      if (pitchIdRef.current !== pitchId) return;
+      const progress = Math.min(1, (now - startedAt) / duration);
+      const movingBall = { status: "pitching", progress, result: null, flight: null };
+      gameRef.current = { ...gameRef.current, ball: movingBall };
+      setBall(movingBall);
+      if (progress >= 1) {
+        finishPitch(false, "time", pitchId);
+        return;
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    }
+    rafRef.current = requestAnimationFrame(tick);
+  }
+
+  function swing() {
+    const current = gameRef.current;
+    if (current.phase !== "playing" || current.ball.status !== "pitching") return;
+    const inHitWindow = current.ball.progress >= BASEBALL_HIT_MIN && current.ball.progress <= BASEBALL_HIT_MAX;
+    const rightDirection = current.batDirection === current.target.id;
+    finishPitch(inHitWindow && rightDirection, inHitWindow ? "direction" : "timing", pitchIdRef.current);
+  }
+
+  function finishPitch(success, missReason, pitchId) {
+    if (pitchIdRef.current !== pitchId) return;
+    cancelAnimationFrame(rafRef.current);
+    pitchIdRef.current += 1;
+
+    const current = gameRef.current;
+    const nextAttempt = current.attempt + 1;
+    const nextScore = current.score + (success ? 1 : 0);
+    const nextBall = {
+      status: success ? "hit" : "miss",
+      progress: 1,
+      result: success ? "hit" : missReason,
+      flight: success ? current.target.id : missReason === "direction" ? current.batDirection : "drop"
+    };
+    const nextPhase = nextAttempt >= BASEBALL_PITCHES ? "over" : "playing";
+
+    gameRef.current = {
+      ...current,
+      phase: nextPhase,
+      score: nextScore,
+      attempt: nextAttempt,
+      ball: nextBall
+    };
+    setScore(nextScore);
+    setAttempt(nextAttempt);
+    setBall(nextBall);
+    setPhase(nextPhase);
+
+    if (success) {
+      setFeedback("精准命中 +1");
+    } else if (missReason === "direction") {
+      setFeedback(`方向不对，目标在${current.target.label}`);
+    } else if (missReason === "timing") {
+      setFeedback("挥棒时机没对上");
+    } else {
+      setFeedback("错过这一球");
+    }
+
+    if (nextPhase === "playing") {
+      nextPitchTimerRef.current = window.setTimeout(() => startPitch(), 1100);
+    }
+  }
+
+  return (
+    <section className="playfield baseball-field">
+      <GameHud items={[["分数", score], ["机会", chanceLabel], ["目标", targetDirection.label]]} />
+      <div className={`baseball-board ${canHitNow ? "hit-ready" : ""}`}>
+        <div className={`baseball-target target-${target.id} ${ball.status === "hit" ? "hit" : ""}`}>
+          <span>目标</span>
+          <strong>{targetDirection.symbol}</strong>
+        </div>
+        <div className="baseball-grass" aria-hidden="true" />
+        <div className="baseball-diamond" aria-hidden="true" />
+        <div className="pitcher" aria-label="投手">
+          <span>🦊</span>
+        </div>
+        <div className="baseball-hit-zone" aria-hidden="true">
+          <span>挥棒</span>
+        </div>
+        <div className={`baseball-ball ball-${ball.status}`} style={ballStyle} aria-label="棒球">
+          ⚾
+        </div>
+        <div className={`animal-batter swing-${batDirection} ${ball.status === "hit" ? "hit" : ""} ${ball.status === "miss" ? "miss" : ""}`} aria-label="打者">
+          <span className="animal-face">🐻</span>
+          <span className="baseball-bat" aria-hidden="true" />
+        </div>
+        <div className="baseball-feedback">
+          <span>{feedbackText}</span>
+          <strong>球棒：{batInfo.label}</strong>
+        </div>
+      </div>
+      {phase !== "playing" && (
+        <div className="overlay">
+          <div className="dialog">
+            <h1>{phase === "over" ? resultText : "动物打棒球"}</h1>
+            <p>{phase === "over" ? `最终得分 ${score}/${BASEBALL_PITCHES}，${BASEBALL_WIN_SCORE} 分及以上获胜。` : "方向键或 WASD 调整球棒方向，空格挥棒。"}</p>
+            <button onClick={reset}>{phase === "over" ? "再玩一次" : "开始游戏"}</button>
+          </div>
+        </div>
+      )}
+      <div className="dpad baseball-dpad">
+        <button onClick={() => chooseDirection("up")}>上</button>
+        <button onClick={() => chooseDirection("left")}>左</button>
+        <button onClick={() => chooseDirection("right")}>右</button>
+        <button onClick={() => chooseDirection("down")}>下</button>
+      </div>
+      <button className="swing-button" onClick={swing}>挥棒</button>
+    </section>
+  );
+}
+
 function GameHud({ items }) {
   return (
     <div className="hud">
@@ -751,6 +997,35 @@ function createMineLayout() {
 
 function mineKey(cell) {
   return `${cell.row}:${cell.col}`;
+}
+
+function pickBaseballTarget() {
+  return BASEBALL_DIRECTIONS[Math.floor(Math.random() * BASEBALL_DIRECTIONS.length)];
+}
+
+function getBaseballDirection(id) {
+  return BASEBALL_DIRECTIONS.find((direction) => direction.id === id) ?? BASEBALL_DIRECTIONS[2];
+}
+
+function getBaseballBallStyle(ball, batDirection, target) {
+  if (ball.status === "hit") {
+    const position = getBaseballDirection(target.id);
+    return { left: `${position.x}%`, top: `${position.y}%` };
+  }
+
+  if (ball.status === "miss") {
+    const position = ball.flight === "drop" ? BASEBALL_DROP_POSITION : getBaseballDirection(ball.flight ?? batDirection);
+    return { left: `${position.x}%`, top: `${position.y}%` };
+  }
+
+  if (ball.status === "pitching") {
+    return {
+      left: `${18 + 29 * ball.progress}%`,
+      top: `${43 + 20 * ball.progress}%`
+    };
+  }
+
+  return { left: "18%", top: "43%" };
 }
 
 function distance(a, b) {
